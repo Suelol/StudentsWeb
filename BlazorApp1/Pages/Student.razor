@@ -1,0 +1,113 @@
+﻿@page "/student"
+
+@using BlazorApp1.Data
+@*@using Data*@
+
+<h3>Student</h3>
+<input type="text" @bind="name" placeholder="Имя" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+<input type="text" @bind="surname" placeholder="Фамилия" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+<input type="text" @bind="lastname" placeholder="Отчество" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+<input type="text" @bind="group" placeholder="Группа" oninput="this.value = this.value.replace(/[а-яА-Яa-zA-Z]/g, '')"/>
+<input type="date" @bind="birthday" />
+<button class = "btn btn-primary" @onclick="click">Добавить</button>
+<p>Кол-во записей: @students.Count</p>
+
+
+<table class="table">
+<thead>
+    <tr>
+        <th>Фамилия</th>
+        <th>Имя</th>
+        <th>Отчество</th>
+        <th>Группа</th>
+        <th>Фото</th>
+        <th>Дата рождения</th>
+    </tr>
+</thead>
+<tbody>
+    @foreach (var student in students)
+    {
+        <tr>
+                    <td><input hidden="@(!student.Show)" type="text" @bind="@student.Surname" placeholder="Фамилия" oninput="this.value = this.value.replace(/[0-9]/g, '')" /><p hidden="@student.Show">@student.Surname</p></td>
+                    <td><input hidden="@(!student.Show)" type="text" @bind="@student.Name" placeholder="Имя" oninput="this.value = this.value.replace(/[0-9]/g, '')" /><p hidden="@student.Show">@student.Name</p></td>
+                    <td><input hidden="@(!student.Show)" type="text" @bind="@student.LastName" placeholder="Отчество" oninput="this.value = this.value.replace(/[0-9]/g, '')" /><p hidden="@student.Show">@student.LastName</p></td>
+                    <td><input hidden="@(!student.Show)" type="text" @bind="@student.Group" placeholder="Группа" oninput="this.value = this.value.replace(/[а-яА-Яa-zA-Z]/g, '')" /><p hidden="@student.Show">@student.Group</p></td>
+        @if (string.IsNullOrEmpty(student.Photo))
+        {
+            <td><img src = "/images/user-icon.png" alt = "заглушка" style = "width: 100px;" ></td>
+        }else
+        {
+            <td><img src="@student.Photo" alt="заглушка" style="width: 100px;"></td>
+        }
+                <td><input hidden="@(!student.Show)" type="date" @bind="@student.DateOfBirth" /><p hidden="@student.Show">@student.DateOfBirth.ToShortDateString()</p></td>
+        <td>
+                    <button hidden="@student.Show" @onclick="() => edit(student)">Редактировать</button>
+                    <button hidden="@student.Show" @onclick="() => del(student)">Удалить</button>
+                    <button hidden="@(!student.Show)" @onclick="() => save(student)">Сохранить</button>
+                    <button hidden="@(!student.Show)" @onclick="() => no_save(student)">Отмена</button>
+        </td>
+        </tr>
+    }
+</tbody>
+</table>
+
+@code {
+
+    private string name = "";
+    private string surname = "";
+    private string lastname = "";
+    private string group = "";
+    private bool show = false;
+    private DateTime birthday;
+    static List<Students> editS = new List<Students> { };
+    static List<Students> students = new List<Students>
+     {
+         new Students (new Random().Next(10000,99999), "Платонова", "Полина","Олеговна", "228", new DateTime(1990,5,15)),
+         new Students (new Random().Next(10000,99999), "Качковский", "Арсений","Владимирович", "220", new DateTime(2006,10,27))
+
+    };
+    private int currentCount = students.Count;
+
+    private bool check(string name, string surname, string lastname, string group, DateTime birthday)
+    {
+        name = String.Join("", name.Split(" "));
+        surname = String.Join("", surname.Split(" "));
+        lastname = String.Join("", lastname.Split(" "));
+        return (String.IsNullOrEmpty(name) ||
+                String.IsNullOrEmpty(surname) ||
+                String.IsNullOrEmpty(lastname) ||
+                birthday.Year <= 1980 || birthday.Year >= 2007);
+    }
+
+    private void click()
+    {
+        if(!check(name, surname, lastname, group, birthday))
+        {
+            currentCount++;
+            students.Add(new Students(new Random().Next(10000, 99999), surname, name, lastname, group, birthday));
+            name = ""; surname = ""; lastname = ""; group = ""; birthday = new DateTime();
+        }
+    }
+
+    private void del(Students student) => students.Remove(student);
+
+    private void edit(Students student) {
+        editS.Add(new Students(student.ID, student.Surname, student.Name, student.LastName, student.Group, student.DateOfBirth));
+        student.Show = true;
+    }
+
+    private void save(Students student)
+    {
+        if (!check(student.Name, student.Surname, student.LastName, student.Group, student.DateOfBirth))
+        {
+            editS.Remove(editS.Where(n => n.ID == student.ID).First());
+            student.Show = false;
+        }
+    }
+
+    private void no_save(Students student) {
+        students[students.IndexOf(students.Where(n => n.ID == student.ID).First())] = editS.Where(n => n.ID == student.ID).First();
+        editS.Remove(editS.Where(n => n.ID == student.ID).First());
+        student.Show = false;
+    }
+}
